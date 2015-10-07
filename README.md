@@ -1,6 +1,6 @@
 # level-size
 
-A LevelUP that limits the size of your leveldown.
+A LevelDB that limits the (approximate) on-disk size.
 
 [![Travis](http://img.shields.io/travis/karissa/level-size.svg?style=flat)](https://travis-ci.org/karissa/level-size)
 
