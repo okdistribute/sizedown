@@ -1,0 +1,11 @@
+{
+  "name": "level-size",
+  "version": "1.0.0",
+  "description": "restrict the size of a leveldb",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "author": "Karissa McKelvey <karissa@karissamck.com> (http://karissamck.com/)",
+  "license": "BSD-2-Clause"
+}

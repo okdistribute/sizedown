@@ -1,63 +1,83 @@
 var sublevel = require('subleveldown')
+var util = require('util')
 var through = require('through2')
+var debug = require('debug')('level-size')
+var events = require('events')
 var prettyBytes = require('pretty-bytes')
 
-module.exports = LevelSize
-
-function LevelSize (opts) {
+function LevelSize (db, limit) {
+  if (!(this instanceof LevelSize)) return new LevelSize(db, limit)
   var self = this
-  if (!opts) opts = {}
-  self.limit = opts.limit || 25
-  self.db = opts.db
+  self.db = db
+  self.limit = limit || 25
   self.meta = sublevel(self.db, 'level-size')
   self.meta.put('limit', self.limit)
   self.meta.get('size', function (err, size) {
-    if (err & !err.notFound) return cb(err)
+    if (err & !err.notFound) return self.emit('error', err)
     self.size = size || 0
-    self.meta.put('size', self.size)
+    self.meta.put('size', self.size, function (err) {
+      if (err) return self.emit('error', err)
+      self.emit('ready')
+    })
   })
+  events.EventEmitter.call(this)
 }
 
-LevelSize.prototype.put (key, value, opts, cb) {
+util.inherits(LevelSize, events.EventEmitter)
+
+LevelSize.prototype.put = function (key, value, opts, cb) {
   var self = this
   if (!self.writable()) return self.bye()
-  if (typeof opts === 'function') return this.put(key, value, null, opts)
+  if (typeof opts === 'function') return self.put(key, value, null, opts)
   if (!opts) opts = {}
-  self.meta.get('size', function (err, size) {
+  var len = value.length
+  if ((self.size + len) > self.limit) return cb(self.bye())
+  debug('putting', key)
+  self.db.put(key, value, opts, function (err) {
     if (err) return cb(err)
-    var len = value.length
-    if ((size + len) > self.limit) return cb(self.bye())
+    self.size += len
+    cb()
   })
 }
 
-LevelSize.prototype.del (key, cb) {
-
-}
-
-LevelSize.prototype.createWriteStream (opts) {
+LevelSize.prototype.close = function (cb) {
   var self = this
-  if (!self.writable()) return self.bye()
-  var stream = self.db.createWriteStream(opts)
-  stream.progress = {bytes: 0}
-  stream.pipe(through(function (data, enc, cb) {
-    stream.progress.bytes += data.length
-    if (stream.progress.bytes + self.size > self.limit) {
-      stream.end()
-      stream.destroy()
-      return cb(self.bye())
+  self.meta.put('size', self.size, function (err) {
+    if (err) return cb(err)
+    self.db.close(cb)
+  })
+}
+
+LevelSize.prototype.open = function (cb) {
+  return this.db.open(cb)
+}
+
+LevelSize.prototype.get = function (key, opts, cb) {
+  return this.db.get(key, opts, cb)
+}
+
+LevelSize.prototype.batch = function (batches, opts, cb) {
+  var self = this
+  var batchsize = 0
+  for (var i in batches) {
+    var batch = batches[i]
+    if (batch.type === 'put') {
+      batchsize += batch.value.length
     }
-    return cb(null, data)
-  })
-  stream.on('end', function () {
-    self.size += stream.progress.bytes
-  })
-  return stream
+  }
+  if (batchsize + self.size > self.limit) return cb(self.bye())
+  else {
+    self.size += batchsize
+    return self.db.batch(batches, opts, cb)
+  }
 }
 
-LevelSize.prototype.writable () {
-  return self.limit > self.size
+LevelSize.prototype.writable = function () {
+  return this.limit > this.size
 }
 
-LevelSize.prototype.bye () {
-  return new Error('Exceeds limit of ' + prettyBytes(self.limit)))
+LevelSize.prototype.bye = function () {
+  return new Error('Exceeds limit of ' + prettyBytes(this.limit))
 }
+
+module.exports = LevelSize
