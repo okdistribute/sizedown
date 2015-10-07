@@ -20,12 +20,13 @@ function LevelSize (opts) {
 
 LevelSize.prototype.put (key, value, opts, cb) {
   var self = this
+  if (!self.writable()) return self.bye()
   if (typeof opts === 'function') return this.put(key, value, null, opts)
   if (!opts) opts = {}
   self.meta.get('size', function (err, size) {
     if (err) return cb(err)
     var len = value.length
-    if ((size + len) > self.limit) return self.bye(cb)
+    if ((size + len) > self.limit) return cb(self.bye())
   })
 }
 
@@ -34,6 +35,8 @@ LevelSize.prototype.del (key, cb) {
 }
 
 LevelSize.prototype.createWriteStream (opts) {
+  var self = this
+  if (!self.writable()) return self.bye()
   var stream = self.db.createWriteStream(opts)
   stream.progress = {bytes: 0}
   stream.pipe(through(function (data, enc, cb) {
@@ -41,7 +44,7 @@ LevelSize.prototype.createWriteStream (opts) {
     if (stream.progress.bytes + self.size > self.limit) {
       stream.end()
       stream.destroy()
-      return self.bye(cb)
+      return cb(self.bye())
     }
     return cb(null, data)
   })
@@ -55,7 +58,6 @@ LevelSize.prototype.writable () {
   return self.limit > self.size
 }
 
-LevelSize.prototype.bye (cb) {
-  var self = this
+LevelSize.prototype.bye () {
   return new Error('Exceeds limit of ' + prettyBytes(self.limit)))
 }
