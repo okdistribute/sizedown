@@ -34,23 +34,28 @@ test('put ok without exceeded limit', function (t) {
 
 test('batch ok without exceeded limit', function (t) {
   var db = levelsize(memdb(), 100 * 1000 * 1000)
-  db.batch([{
-    type: 'put',
-    key: 'hello',
-    value: 'world'
-  }, {
-    type: 'put',
-    key: 'hej',
-    value: 'verden'
-  }], function (err) {
-    t.error(err, 'no err')
-    db.get('hello', function (err, value) {
+  db.on('error', function (err) {
+    t.ifError(err)
+  })
+  db.on('ready', function () {
+    db.batch([{
+      type: 'put',
+      key: 'hello',
+      value: 'world'
+    }, {
+      type: 'put',
+      key: 'hej',
+      value: 'verden'
+    }], function (err) {
       t.error(err, 'no err')
-      t.same(value, 'world')
-      db.get('hej', function (err, value) {
+      db.get('hello', function (err, value) {
         t.error(err, 'no err')
-        t.same(value, 'verden')
-        t.end()
+        t.same(value, 'world')
+        db.get('hej', function (err, value) {
+          t.error(err, 'no err')
+          t.same(value, 'verden')
+          t.end()
+        })
       })
     })
   })
