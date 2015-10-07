@@ -8,7 +8,7 @@ A LevelDB that limits the (approximate) on-disk size.
 npm install level-size
 ```
 
-## `db = levelsize([level], [number of bytes])`
+## `db = levelsize([level], [bytes])`
 
 levelsize returns a levelup that
 
