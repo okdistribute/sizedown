@@ -1,7 +1,9 @@
 var inherits = require('inherits')
+var levelup = require('levelup')
 var debug = require('debug')('level-size')
 var prettyBytes = require('pretty-bytes')
 var abstract = require('abstract-leveldown')
+var subleveldown = require('subleveldown')
 
 function LevelSize (db, opts) {
   if (!opts) opts = {}
@@ -9,12 +11,7 @@ function LevelSize (db, opts) {
   var self = this
   self._db = db.db || db
   self._limit = opts.limit || 0
-  self.getSize(function (err, size) {
-    if (err && !err.notFound && !err.message.match(/NotFound/)) throw err
-    self._updateSize(size || 0, function (err) {
-      if (err) throw err
-    })
-  })
+  self.meta = subleveldown(levelup('test', function () { return self._db }), 'meta')
   abstract.AbstractLevelDOWN.call(this, this._db.location || 'no-location')
 }
 
@@ -68,18 +65,9 @@ LevelSize.prototype._del = function (key, opts, cb) {
 
 LevelSize.prototype.getSize = function (cb) {
   debug('getting size')
-  this._db.get('level-size!size', function (err, size) {
+  this.approximateSize(0, '\xff', function (err, size) {
     if (err) return cb(err)
-    return cb(null, parseInt(size, 10))
-  })
-}
-
-LevelSize.prototype._updateSize = function (size, cb) {
-  var self = this
-  debug('updating size')
-  self._db.put('level-size!size', size, function (err) {
-    if (err) return cb(err)
-    return cb()
+    return cb(null, size)
   })
 }
 
@@ -92,14 +80,7 @@ LevelSize.prototype._put = function (key, value, opts, cb) {
     if (err) return cb(err)
     size += len
     if (self._limit > 0 && size > self._limit) return cb(self.bye())
-    debug('putting', key)
-    self._db.put(key, value, opts, cb && function (err) {
-      if (err) return cb(err)
-      self._updateSize(size, function (err) {
-        if (err) throw err
-        cb()
-      })
-    })
+    self._db.put(key, value, opts, cb)
   })
 }
 
@@ -118,11 +99,7 @@ LevelSize.prototype._batch = function (batches, opts, cb) {
     if (err) return cb(err)
     size += batchsize
     if (self._limit > 0 && size > self._limit) return cb(self.bye())
-    else {
-      self._updateSize(size, function () {
-        return self._db.batch(batches, opts, cb)
-      })
-    }
+    else return self._db.batch(batches, opts, cb)
   })
 }
 
