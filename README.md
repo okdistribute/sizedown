@@ -25,7 +25,7 @@ var db = levelup('test', {db: down)})
 
 db.put('akey', 'a value', function (err) {
   db.db.getSize(function (err, size) {
-    // size === 7 or length of 'a value'
+    // approximateSize of the whole thing
   })
 })
 ```
