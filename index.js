@@ -64,7 +64,7 @@ LevelSize.prototype._del = function (key, opts, cb) {
 
 LevelSize.prototype.getSize = function (cb) {
   debug('getting size')
-  this.approximateSize('', '\xff', function (err, size) {
+  this.approximateSize(0, '\xff', function (err, size) {
     if (err) return cb(err)
     debug('current size', size)
     return cb(null, size)
