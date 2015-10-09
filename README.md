@@ -18,7 +18,7 @@ Monitor the size and see the current size in bytes with `db.db.getSize`:
 var sizedown = require('sizedown')
 
 function down (loc) {
-  return sizedown(memdown(loc), 0)
+  return sizedown(leveldown(loc), 0)
 }
 
 var db = levelup('test', {db: down)})
@@ -32,11 +32,8 @@ db.put('akey', 'a value', function (err) {
 
 
 ```js
-
-function down (bytes) {
-  // number of bytes to allow via put and batch before erroring
-  return sizedown(memdown(), {limit: bytes})
-}
+// limit is number of bytes to allow via put and batch before erroring
+return sizedown(leveldown(loc), {limit: 1})
 
 var db = levelup('hello', down(1))
 
