@@ -2,7 +2,7 @@
 
 A LevelDOWN that monitors and optionally limits the on-disk size.
 
-[![Travis](http://img.shields.io/travis/karissa/level-size.svg?style=flat)](https://travis-ci.org/karissa/level-size)
+[![Travis](http://img.shields.io/travis/karissa/sizedown.svg?style=flat)](https://travis-ci.org/karissa/sizedown)
 
 ```
 npm install sizedown
@@ -21,25 +21,24 @@ function down (loc) {
   return sizedown(memdown(loc), 0)
 }
 
-var db = levelup('test', {db: )})
+var db = levelup('test', {db: down)})
+
 db.put('akey', 'a value', function (err) {
-  t.ifError(err, 'no error')
-  db.get('akey', function (err, value) {
-    t.ifError(err)
-    t.same(value, 'a value')
-    db.db.getSize(function (err, size) {
-      t.ifError(err)
-      t.same(size, 7)
-      t.end()
-    })
+  db.db.getSize(function (err, size) {
+    // size === 7 or length of 'a value'
   })
 })
 ```
 
 
 ```js
-var bytes = 1 // number of bytes to allow via put and batch before erroring
-var db = sizedown(memdown(), {limit: bytes})
+
+function down (bytes) {
+  // number of bytes to allow via put and batch before erroring
+  return sizedown(memdown(), {limit: bytes})
+}
+
+var db = levelup('hello', down(1))
 
 db.on('ready', function () {
   db.put('akey', 'a value', function (err) {
@@ -53,10 +52,9 @@ db.on('ready', function () {
 
 ## How?
 
-Creates a sublevel called 'level-size' with the following keys:
+Creates a sublevel called 'sizedown' with the following keys:
 
-`level-size!total`: upper bound
-`level-size!size`: current size
+`sizedown!size`: current size
 
 ## Issues
 
