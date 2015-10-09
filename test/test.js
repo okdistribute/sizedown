@@ -6,9 +6,14 @@ var rimraf = require('rimraf')
 var path = require('path')
 var tmp = path.join(require('os').tmpdir(), 'level-size')
 var testCommon = require('./common')
+var memdown = require('memdown')
 var testBuffer = new Buffer('this-is-test-data')
 
 rimraf.sync(tmp)
+
+var mem = function (loc) {
+  return sizedown(memdown(loc), 0)
+}
 
 var down = function (limit) {
   if (!limit) limit = 0 // no limit to pass abstract-leveldown test coverage
@@ -19,17 +24,17 @@ var down = function (limit) {
 
 /** compatibility with basic LevelDOWN API ***/
 //
-require('abstract-leveldown/abstract/open-test').args(down(0), test, testCommon)
-require('abstract-leveldown/abstract/open-test').open(down(0), test, testCommon)
-require('abstract-leveldown/abstract/del-test').all(down(0), test, testCommon)
-require('abstract-leveldown/abstract/get-test').all(down(0), test, testCommon)
-require('abstract-leveldown/abstract/put-test').all(down(0), test, testCommon)
-require('abstract-leveldown/abstract/put-get-del-test').all(down(0), test, testCommon, testBuffer)
-require('abstract-leveldown/abstract/batch-test').all(down(0), test, testCommon)
-require('abstract-leveldown/abstract/chained-batch-test').all(down(0), test, testCommon)
-require('abstract-leveldown/abstract/close-test').close(down(0), test, testCommon)
-require('abstract-leveldown/abstract/iterator-test').all(down(0), test, testCommon)
-require('abstract-leveldown/abstract/ranges-test').all(down(0), test, testCommon)
+require('abstract-leveldown/abstract/open-test').args(mem, test, testCommon)
+require('abstract-leveldown/abstract/open-test').open(mem, test, testCommon)
+require('abstract-leveldown/abstract/del-test').all(mem, test, testCommon)
+require('abstract-leveldown/abstract/get-test').all(mem, test, testCommon)
+require('abstract-leveldown/abstract/put-test').all(mem, test, testCommon)
+require('abstract-leveldown/abstract/put-get-del-test').all(mem, test, testCommon, testBuffer)
+require('abstract-leveldown/abstract/batch-test').all(mem, test, testCommon)
+require('abstract-leveldown/abstract/chained-batch-test').all(mem, test, testCommon)
+require('abstract-leveldown/abstract/close-test').close(mem, test, testCommon)
+require('abstract-leveldown/abstract/iterator-test').all(mem, test, testCommon)
+require('abstract-leveldown/abstract/ranges-test').all(mem, test, testCommon)
 
 test('put errors when limit is exceeded', function (t) {
   var db = levelup(tmp, {db: down(1)})
