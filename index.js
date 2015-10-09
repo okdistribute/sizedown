@@ -11,7 +11,6 @@ function LevelSize (db, opts) {
   var self = this
   self._db = db.db || db
   self._limit = opts.limit || 0
-  self.meta = subleveldown(levelup('test', function () { return self._db }), 'meta')
   abstract.AbstractLevelDOWN.call(this, this._db.location || 'no-location')
 }
 
@@ -65,8 +64,9 @@ LevelSize.prototype._del = function (key, opts, cb) {
 
 LevelSize.prototype.getSize = function (cb) {
   debug('getting size')
-  this.approximateSize(0, '\xff', function (err, size) {
+  this.approximateSize('', '\xff', function (err, size) {
     if (err) return cb(err)
+    debug('current size', size)
     return cb(null, size)
   })
 }
@@ -89,6 +89,7 @@ LevelSize.prototype._batch = function (batches, opts, cb) {
   if (typeof opts === 'function') return self.batch(batches, null, opts)
   if (!opts) opts = {}
   var batchsize = 0
+  // check after and rollback instead..?
   for (var i in batches) {
     var batch = batches[i]
     if (batch.type === 'put') {
@@ -114,7 +115,7 @@ function LevelIterator (iterator) {
 LevelIterator.prototype.next = function (cb) {
   this._iterator.next(cb && function (err, key, value) {
     if (err) return cb(err)
-    if (key !== 'level-size!size') cb.apply(null, arguments)
+    cb.apply(null, arguments)
   })
 }
 
