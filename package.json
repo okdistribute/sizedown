@@ -1,19 +1,19 @@
 {
   "name": "sizedown",
   "version": "1.0.0",
-  "description": "Level that monitors and limits the size.",
+  "description": "Level that monitors and limits the *real* on-disk size.",
   "main": "index.js",
   "scripts": {
     "test": "node test/test.js"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/karissa/level-size.git"
+    "url": "git://github.com/karissa/sizedown.git"
   },
   "bugs": {
-    "url": "https://github.com/karissa/level-size"
+    "url": "https://github.com/karissa/sizedown"
   },
-  "homepage": "https://github.com/karissa/level-size",
+  "homepage": "https://github.com/karissa/sizedown",
   "author": "Karissa McKelvey <karissa@karissamck.com> (http://karissamck.com/)",
   "license": "BSD-2-Clause",
   "dependencies": {
