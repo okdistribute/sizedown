@@ -1,6 +1,6 @@
 {
   "name": "sizedown",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A LevelDOWN that monitors and optionally limits it's on-disk size.",
   "main": "index.js",
   "scripts": {
