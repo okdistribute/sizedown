@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "memdown": "^1.1.0",
-    "rimraf": "^2.4.3"
+    "rimraf": "^2.4.3",
+    "tape": "^4.2.1"
   }
 }
