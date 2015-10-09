@@ -22,6 +22,10 @@ inherits(LevelSize, abstract.AbstractLevelDOWN)
 
 LevelSize.prototype.type = 'levelsize'
 
+LevelSize.prototype.iterator = function (opts) {
+  return new LevelIterator(this._db.iterator(opts))
+}
+
 LevelSize.prototype._open = function () {
   this._db.open.apply(this._db, arguments)
 }
@@ -36,10 +40,6 @@ LevelSize.prototype.setDb = function () {
 
 LevelSize.prototype._get = function (key, opts, cb) {
   return this._db.get.apply(this._db, arguments)
-}
-
-LevelSize.prototype._iterator = function (key, opts, cb) {
-  return this._db.iterator.apply(this._db, arguments)
 }
 
 LevelSize.prototype._approximateSize = function (start, end, cb) {
@@ -77,8 +77,7 @@ LevelSize.prototype.getSize = function (cb) {
 LevelSize.prototype._updateSize = function (size, cb) {
   var self = this
   debug('updating size')
-  self._db.put('level-size!size', size, cb && function (err) {
-    console.log(cb)
+  self._db.put('level-size!size', size, function (err) {
     if (err) return cb(err)
     return cb()
   })
@@ -129,6 +128,21 @@ LevelSize.prototype._batch = function (batches, opts, cb) {
 
 LevelSize.prototype.bye = function () {
   return new Error('Exceeds limit of ' + prettyBytes(this._limit))
+}
+
+function LevelIterator (iterator) {
+  this._iterator = iterator
+}
+
+LevelIterator.prototype.next = function (cb) {
+  this._iterator.next(cb && function (err, key, value) {
+    if (err) return cb(err)
+    if (key !== 'level-size!size') cb.apply(null, arguments)
+  })
+}
+
+LevelIterator.prototype.end = function (cb) {
+  this._iterator.end(cb)
 }
 
 module.exports = LevelSize
