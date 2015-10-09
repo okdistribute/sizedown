@@ -19,6 +19,7 @@
   "dependencies": {
     "abstract-leveldown": "^2.4.1",
     "debug": "^2.2.0",
+    "inherits": "^2.0.1",
     "levelup": "^1.2.1",
     "pretty-bytes": "^2.0.1",
     "subleveldown": "^2.0.0",

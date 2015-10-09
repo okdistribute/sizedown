@@ -1,4 +1,4 @@
-var util = require('util')
+var inherits = require('inherits')
 var debug = require('debug')('level-size')
 var prettyBytes = require('pretty-bytes')
 var abstract = require('abstract-leveldown')
@@ -18,15 +18,15 @@ function LevelSize (db, opts) {
   abstract.AbstractLevelDOWN.call(this, this._db.location || 'no-location')
 }
 
-util.inherits(LevelSize, abstract.AbstractLevelDOWN)
+inherits(LevelSize, abstract.AbstractLevelDOWN)
 
 LevelSize.prototype.type = 'levelsize'
 
-LevelSize.prototype.open = function () {
+LevelSize.prototype._open = function () {
   this._db.open.apply(this._db, arguments)
 }
 
-LevelSize.prototype.close = function () {
+LevelSize.prototype._close = function () {
   return this._db.close.apply(this._db, arguments)
 }
 
@@ -34,16 +34,20 @@ LevelSize.prototype.setDb = function () {
   return this._db.setDb.apply(this._db, arguments)
 }
 
-LevelSize.prototype.get = function (key, opts, cb) {
+LevelSize.prototype._get = function (key, opts, cb) {
   return this._db.get.apply(this._db, arguments)
 }
 
-LevelSize.prototype.approximateSize = function (start, end, cb) {
+LevelSize.prototype._iterator = function (key, opts, cb) {
+  return this._db.iterator.apply(this._db, arguments)
+}
+
+LevelSize.prototype._approximateSize = function (start, end, cb) {
   return this._db.approximateSize.apply(this._db, arguments)
 }
 
-LevelSize.prototype.iterator = function (opts) {
-  return abstract.AbstractLevelDOWN.iterator.call(this, opts)
+LevelSize.prototype._iterator = function (opts) {
+  return this._db.iterator.apply(this._db, arguments)
 }
 
 LevelSize.prototype.getProperty = function () {
@@ -58,8 +62,7 @@ LevelSize.prototype.repair = function () {
   return this._db.repair.apply(this._db, arguments)
 }
 
-LevelSize.prototype.del = function (key, opts, cb) {
-  // TODO: get approximate size for this key and update internal size property.
+LevelSize.prototype._del = function (key, opts, cb) {
   return this._db.del.apply(this._db, arguments)
 }
 
@@ -67,40 +70,41 @@ LevelSize.prototype.getSize = function (cb) {
   debug('getting size')
   this._db.get('level-size!size', function (err, size) {
     if (err) return cb(err)
-    cb(null, parseInt(size))
+    return cb(null, parseInt(size, 10))
   })
 }
 
 LevelSize.prototype._updateSize = function (size, cb) {
   var self = this
   debug('updating size')
-  self._db.put('level-size!size', size, function (err) {
+  self._db.put('level-size!size', size, cb && function (err) {
+    console.log(cb)
     if (err) return cb(err)
     return cb()
   })
 }
 
-LevelSize.prototype.put = function (key, value, opts, cb) {
+LevelSize.prototype._put = function (key, value, opts, cb) {
   var self = this
-  if (typeof opts === 'function') {
-    cb = opts
-    opts = null
-  }
+  if (typeof opts === 'function') return self.put(key, value, null, opts)
   if (!opts) opts = {}
-  var len = value.length
+  var len = value && value.length || 0
   self.getSize(function (err, size) {
     if (err) return cb(err)
     size += len
-    if ((size) > self._limit) return cb(self.bye())
+    if (self._limit > 0 && size > self._limit) return cb(self.bye())
     debug('putting', key)
-    self._db.put(key, value, opts, function (err) {
+    self._db.put(key, value, opts, cb && function (err) {
       if (err) return cb(err)
-      self._updateSize(size, cb)
+      self._updateSize(size, function (err) {
+        if (err) throw err
+        cb()
+      })
     })
   })
 }
 
-LevelSize.prototype.batch = function (batches, opts, cb) {
+LevelSize.prototype._batch = function (batches, opts, cb) {
   var self = this
   if (typeof opts === 'function') return self.batch(batches, null, opts)
   if (!opts) opts = {}
@@ -108,13 +112,13 @@ LevelSize.prototype.batch = function (batches, opts, cb) {
   for (var i in batches) {
     var batch = batches[i]
     if (batch.type === 'put') {
-      batchsize += batch.value.length
+      batchsize += batch && batch.value && batch.value.length || 0
     }
   }
   self.getSize(function (err, size) {
     if (err) return cb(err)
     size += batchsize
-    if (size > self._limit) return cb(self.bye())
+    if (self._limit > 0 && size > self._limit) return cb(self.bye())
     else {
       self._updateSize(size, function () {
         return self._db.batch(batches, opts, cb)
