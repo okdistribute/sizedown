@@ -49,13 +49,3 @@ db.on('ready', function () {
   })
 })
 ```
-
-## How?
-
-Creates a sublevel called 'sizedown' with the following keys:
-
-`sizedown!size`: current size
-
-## Issues
-
-* doesn't update the size after a successful delete
